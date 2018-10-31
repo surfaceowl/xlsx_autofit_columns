@@ -1,0 +1,2 @@
+xlrd==1.1.0           # excel read
+XlsxWriter==1.1.1     # cannot read excel files, but can write excel with much better control over formatting on export
