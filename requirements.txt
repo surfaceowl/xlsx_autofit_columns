@@ -1,2 +1,2 @@
-xlrd==1.1.0           # excel read
-XlsxWriter==1.1.1     # cannot read excel files, but can write excel with much better control over formatting on export
+black==19.3b0         # use black for clean python formatting
+openpyxl==2.6.2       # both reads and writes excel 2010 and later

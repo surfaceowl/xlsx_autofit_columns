@@ -1,81 +1,76 @@
 """
-python helper to format excel file output with column widths for each column set to accommodate
-the longest content in any row, for all columns
+Python helper to update the format of an existing excel file output with
+column widths for each column set to accommodate the longest content in any row, for all columns.
+
+Ignores null cells to avoid zero-width columns in rare cases where intermediate columns are empty
+Ignores formulas for setting length - since long formulas create very wide columns, and results from
+formulas are often much narrower than the actual formula
 """
-import xlrd               # necessary to read excel files
-import xlsxwriter         # used to write excel files, much more control than xlrd
+
+import openpyxl  # r/w excel 2010 and newer files
+from openpyxl.utils import get_column_letter  # lookup column title from index num
+import sys  # for taking file parameter as input
 
 
-class XLSXAutoFitColumns():
+class XLSXAutoFitColumns(object):
     """
-    CLASS to ingest an excel file and output a new excel file with
-    column widths set to fit the longest content in each column
-    so the user can easily read content when the open the output file manually
+    CLASS to ingest an excel file and update the existing file with
+    helps the user more easily read content when
+    column widths are narrower than column content
     """
 
     def __init__(self, inputfile):
-        self.workbook = xlrd.open_workbook(inputfile)
-        self.outputworkbook = xlsxwriter.Workbook(self.workbook)
+        self.inputfile = inputfile
+        self.output_filename = inputfile
+        self.workbook = openpyxl.load_workbook(inputfile)
 
-    # noinspection PyMethodMayBeStatic
-    def fit_column_widths(self, worksheet, max_width, n_columns):
+    def fit_column_widths_for_one_sheet(self, worksheet):
         """
         Method to set the width parameter of each column in the excel file
         :param worksheet: worksheet we are processing
-        :param max_width: maximum width of a column
-        :param n_columns: number of columns with content in cells (non-null)
         :return:  worksheet object, with column widths set in excel
         """
-        for i in range(n_columns):
-            width = max_width[i]
-            worksheet.set_column(i, i, width)
+        # cell_widths: dict of column numbers and MAX len of longest cell contents for each column
+        cell_widths = {}
+        for column in worksheet:
+            for cell in column:
+                if cell.value:  # skip empty cells
+                    if (
+                        str(cell.value)[0] == "="
+                    ):  # skip formulas, often much longer than content
+                        continue
+                    cell_widths[cell.column] = max(
+                        (cell_widths.get(cell.column, 0), len(str(cell.value)))
+                    )
 
-    def generate_from_input(self):
-        input_columns = [len(x) for x in self.columns]
-        columns = []
-        for column in input_columns:
-            if 'unnamed' in column:
-                column_index = input_columns.index(column)
-                column_letter = xlsxwriter.utility.xl_col_to_name(column_index)
-                column_name = 'Unlabeled_column_with_data_in_column_%s' % column_letter
-                columns.append(column_name)
-            else:
-                columns.append(column)
+        for col, column_width in cell_widths.items():
+            column_width = str(column_width)
+            worksheet.column_dimensions[get_column_letter(col)].width = column_width
 
-        assert len(columns) == len(input_columns)
+        return worksheet
 
-        ws_selected = self.workbook.add_worksheet(name=self)
-        bold = self.workbook.add_format({'bold': True})
-        ws_selected.write_row('A1', columns, bold)
-
-        ws_row = 1
-        ws_col = 0
-        rows = self.rows
-        max_width = [len(x) for x in columns]
-
-        for row in rows:
-            for i, column in enumerate(input_columns):
-                current_width = max_width[i]
-                entry = self.row[column]
-
-                ws_selected.write(ws_row, ws_col, entry)
-                if isinstance(entry, float) or isinstance(entry, int):
-                    str_len = len('{:0.2f}'.format(entry))
-                else:
-                    str_len = len(str(entry))
-                max_width[i] = max(current_width, str_len)
-                ws_col += 1
-            ws_row += 1
-            ws_col = 0
-        self.fit_column_widths(ws_selected, max_width, len(columns))
+    def process_all_worksheets(self) -> object:
+        for worksheet in self.workbook.sheetnames:
+            self.fit_column_widths_for_one_sheet(self.workbook[worksheet])
+        self.save()
+        return True
 
     def save(self):
         """
         Save the workbook
-        :return: workbook object
+        :return: saved excel file, returns `True`
         """
-        self.outputworkbook.close()
+        self.workbook.save(self.output_filename)
+        return True
 
 
-if __name__ == '__main__':
-    XLSXAutoFitColumns(inputfile="sample_excel_data.xlsx")
+if __name__ == "__main__":
+
+    # check if user has input file to fix, or use the default
+    if len(sys.argv) == 1:
+        inputfile = "sample_excel_data.xlsx"
+    else:
+        inputfile = sys.argv[1]
+
+    fix_worksheet = XLSXAutoFitColumns(inputfile)
+    fix_worksheet.process_all_worksheets()
