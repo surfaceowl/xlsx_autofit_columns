@@ -38,7 +38,7 @@ Sample Excel file from repo before running `xlsx_autofit_columns`
 ![Excel BEFORE column width fix](https://github.com/surfaceowl/xlsx_autofit_columns/blob/master/readme_images/excel.sample_before.png) 
 
 ...and after:
-![Excel AFTER column width fix](hhttps://github.com/surfaceowl/xlsx_autofit_columns/blob/master/readme_images/excel.sample_after.png)
+![Excel AFTER column width fix](https://github.com/surfaceowl/xlsx_autofit_columns/blob/master/readme_images/excel.sample_after.png)
 
 ###References:
 https://openpyxl.readthedocs.io/en/stable/index.html
