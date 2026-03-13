@@ -1,2 +1,2 @@
-black==19.3b0         # use black for clean python formatting
+black==26.3.1         # use black for clean python formatting
 openpyxl==2.6.2       # both reads and writes excel 2010 and later
